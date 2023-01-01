@@ -1,10 +1,6 @@
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
+fun main() {
+    println("Starting Alice coffee app!")
 
-val logger: Logger = LogManager.getLogger()
-
-fun main(args: Array<String>) {
-    logger.debug("Starting app: $args")
-    println("Hello World!")
-    VendingProtocol()
+    val vending = vending.VendingProtocol()
+    println(vending.status)
 }
