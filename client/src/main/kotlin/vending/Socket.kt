@@ -1,11 +1,13 @@
-import org.apache.logging.log4j.LogManager
+package vending
+
+import mu.KotlinLogging
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.Socket
 
 class VendingSocket internal constructor(private var host: String, private var port: Int) : Runnable {
-    private val logger = LogManager.getLogger()
+    private val logger = KotlinLogging.logger {}
 
     private var socket: Socket = Socket(host, port)
     private var socketError = "SocketError"

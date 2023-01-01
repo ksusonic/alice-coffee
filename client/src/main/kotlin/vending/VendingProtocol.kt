@@ -1,19 +1,24 @@
-import org.apache.logging.log4j.LogManager
+package vending
+
+import mu.KotlinLogging
+import java.net.ConnectException
 import kotlin.experimental.and
 import kotlin.experimental.inv
 import kotlin.experimental.or
 
 class VendingProtocol internal constructor() {
-    private val logger = LogManager.getLogger()
+    private val logger = KotlinLogging.logger {}
 
     private var socket: VendingSocket
+
     private var timer: java.util.Timer? = null
     var status: Status = Status()
 
     fun connect() {
         socket.stop()
         socket = VendingSocket("172.21.22.193", 999)
-        val socketTread: Thread = Thread(socket)
+        socket.connect()
+        val socketTread = Thread(socket)
         socketTread.start()
     }
 
@@ -42,7 +47,7 @@ class VendingProtocol internal constructor() {
     private val YES = 16
     private val NO = -16
     private val noAnsw = -17
-    private val success = 32
+    val success = 32
     private val fail = -32
     private var lastMakeCmdStatus = fail
     private var pollStatus = fail
@@ -295,9 +300,8 @@ class VendingProtocol internal constructor() {
     }
 
     fun unformAnswer(data: ByteArray): ByteArray? {
-        var data = data
-        data = recoverBadBytes(data)
-        return if (isCrcCorrect(data)) data else null
+        val badData = recoverBadBytes(data)
+        return if (isCrcCorrect(badData)) badData else null
     }
 
     fun crc(data: ByteArray): Byte {
@@ -420,7 +424,13 @@ class VendingProtocol internal constructor() {
     var logData: String? = null
 
     init {
-        socket = VendingSocket("172.21.22.193", 999) //socket = new socket("192.168.232.2", 1024);
+        try {
+            socket = VendingSocket("172.21.22.193", 999) //socket = new socket("192.168.232.2", 1024);
+        } catch (e: ConnectException) {
+            logger.error("Could not connect to coffee vending. $e")
+            throw e
+        }
+
         val socketTread: Thread = Thread(socket)
         socketTread.start()
         logic(initEvent, null)
