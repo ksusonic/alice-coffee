@@ -1,6 +1,18 @@
-fun main() {
-    println("Starting Alice coffee app!")
+import mu.KotlinLogging
+import queue.MessageHandler
 
-    val vending = vending.VendingProtocol()
-    println(vending.status)
+private val logger = KotlinLogging.logger {}
+
+suspend fun main() {
+    logger.info("Starting Alice coffee app!")
+
+    val mq = MessageHandler()
+
+//    val vending = vending.VendingProtocol()
+    // vending.connect()
+
+    while (true) {
+        val rawCommand = mq.receiveAndDeleteMessage()
+        logger.debug("got command: $rawCommand")
+    }
 }

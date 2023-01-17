@@ -29,9 +29,9 @@ class MessageHandler(queueUrl: String = DEFAULT_SQS_URL, regionVal: String = SQS
             val response: ReceiveMessageResponse = client.receiveMessage(receiveMessageRequest)
             message = response.messages?.first()
             if (message != null) {
-                logger.info("Got message id=${message.messageId} ${message.receiptHandle} - ${message.body}}")
+                logger.info("Got message id=${message.messageId} body=${message.body}}")
             } else {
-                logger.debug("Got no-messages response $response")
+                logger.warn("Got no-messages response $response")
             }
         }
         client.deleteMessage(DeleteMessageRequest {

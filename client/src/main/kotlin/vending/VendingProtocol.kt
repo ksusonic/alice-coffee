@@ -9,22 +9,26 @@ import kotlin.experimental.or
 class VendingProtocol internal constructor() {
     private val logger = KotlinLogging.logger {}
 
-    private var socket: VendingSocket
+    private lateinit var socket: VendingSocket
 
     private var timer: java.util.Timer? = null
     var status: Status = Status()
 
-    fun connect() {
-        socket.stop()
-        socket = VendingSocket("172.21.22.193", 999)
-        socket.connect()
+    fun connect(host: String, port: Int = 999) {
+        try {
+            socket = VendingSocket(host, port) //socket = new socket("192.168.232.2", 1024);
+        } catch (e: ConnectException) {
+            logger.error("Could not connect to coffee vending. $e")
+            throw e
+        }
+
         val socketTread = Thread(socket)
         socketTread.start()
+        logic(initEvent, null)
     }
 
     fun disconnect() {
         socket.stop()
-        // socket = null
     }
 
     private fun parsePollData(pollData: ByteArray?): Int //TODO: Complete this.
@@ -422,19 +426,6 @@ class VendingProtocol internal constructor() {
     }
 
     var logData: String? = null
-
-    init {
-        try {
-            socket = VendingSocket("172.21.22.193", 999) //socket = new socket("192.168.232.2", 1024);
-        } catch (e: ConnectException) {
-            logger.error("Could not connect to coffee vending. $e")
-            throw e
-        }
-
-        val socketTread: Thread = Thread(socket)
-        socketTread.start()
-        logic(initEvent, null)
-    }
 
     fun toLog(text: String) {
         logData += java.util.Calendar.getInstance().getTime().toString() + " " + text + "\n"
