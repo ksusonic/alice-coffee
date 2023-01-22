@@ -3,8 +3,9 @@ package config
 import (
 	"flag"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -16,14 +17,13 @@ type Config struct {
 
 func LoadConfig() (*Config, error) {
 	var config Config
-	var configPath string
 
-	flag.StringVar(&configPath, "config", "configs/dev.yaml", "path to config file")
+	var configPath string
+	flag.StringVar(&configPath, "config", "", "path to config file")
 	flag.StringVar(&config.Address, "address", ":8080", "server address like 127.0.0.1:8080")
 	flag.Int64Var(&config.Timeout, "timeout", 3000, "timeout in ms")
 	flag.BoolVar(&config.Debug, "debug", false, "debug mode")
 	flag.BoolVar(&config.AutoPong, "auto_pong", true, "auto pong on /ping")
-
 	flag.Parse()
 
 	if configPath != "" {

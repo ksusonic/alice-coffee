@@ -1,9 +1,11 @@
 package main
 
 import (
+	"log"
+	"time"
+
 	"github.com/ksusonic/alice-coffee/config"
 	"github.com/ksusonic/alice-coffee/pkg/dialogs"
-	"log"
 )
 
 func main() {
@@ -11,7 +13,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	updates := dialogs.StartServer("/hook", conf)
+	updates := dialogs.StartServer("/hook", dialogs.ServerConf{
+		Address:  conf.Address,
+		Debug:    conf.Debug,
+		Timeout:  time.Duration(conf.Timeout),
+		AutoPong: conf.AutoPong,
+	})
 
 	updates.Loop(func(k dialogs.Kit) *dialogs.Response {
 		req, resp := k.Init()
