@@ -63,8 +63,6 @@ func StartServer(hookPath string, conf ServerConf) Stream {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
 
-	router.Use(middleware.Heartbeat("/ping"))
-
 	router.HandleFunc(hookPath, webhook(conf, stream))
 
 	go func() {
