@@ -1,3 +1,3 @@
-auto_pong: false
+auto_pong: true
 timeout: 3000
 debug: true

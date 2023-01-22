@@ -1,12 +1,17 @@
 package main
 
 import (
+	"github.com/ksusonic/alice-coffee/config"
 	"github.com/ksusonic/alice-coffee/pkg/dialogs"
+	"log"
 )
 
 func main() {
-	config := dialogs.LoadConfig(dialogs.ParseArgs())
-	updates := dialogs.StartServer("/hook", config)
+	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	updates := dialogs.StartServer("/hook", conf)
 
 	updates.Loop(func(k dialogs.Kit) *dialogs.Response {
 		req, resp := k.Init()
