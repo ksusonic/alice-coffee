@@ -3,23 +3,33 @@ package queue
 import (
 	"context"
 	"fmt"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
 const REGION = "ru-central1"
-const YaCloudApiUrl = "https://message-queue.api.cloud.yandex.net"
 
 type MessageQueue struct {
 	QueueUrl string
 	Client   *sqs.Client
 }
 
-func NewMessageQueue(queueUrl string, config aws.Config) *MessageQueue {
+func NewMessageQueue(queueUrl, accessKey, secretKey string) *MessageQueue {
+	resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
+		return aws.Endpoint{
+			URL:               queueUrl,
+			SigningRegion:     REGION,
+			HostnameImmutable: true,
+		}, nil
+	})
+
 	return &MessageQueue{
 		QueueUrl: queueUrl,
-		Client:   sqs.NewFromConfig(config),
+		Client: sqs.NewFromConfig(aws.Config{
+			Region:                      REGION,
+			Credentials:                 NewCredentialsProvider(accessKey, secretKey),
+			EndpointResolverWithOptions: resolver,
+		}),
 	}
 }
 

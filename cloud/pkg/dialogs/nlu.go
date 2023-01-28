@@ -26,6 +26,24 @@ type Entity struct {
 	Value *json.RawMessage `json:"value"`
 }
 
+// Slot is a part of intent
+type Slot struct {
+	Type   string `json:"type"`
+	Tokens struct {
+		Start int `json:"start"`
+		End   int `json:"end"`
+	}
+	Value string `json:"value"`
+}
+
+// Slots is map of name of slot to value
+type Slots struct {
+	Slots map[string]Slot `json:"slots"`
+}
+
+// Intents is map name to slots
+type Intents map[string]Slots
+
 // NEName структура типа NENameType.
 type NEName struct {
 	Start, End     int
@@ -62,13 +80,13 @@ type NEDateTime struct {
 // NENumber структура типа NENumberType.
 type NENumber float32
 
-func (NEName) netype()     {}
-func (NELocation) netype() {}
-func (NEDateTime) netype() {}
-func (NENumber) netype()   {}
+func (NEName) ttype()     {}
+func (NELocation) ttype() {}
+func (NEDateTime) ttype() {}
+func (NENumber) ttype()   {}
 
-type netype interface {
-	netype()
+type ttype interface {
+	ttype()
 }
 
 // Entities возвращает необработанные именованные сущности из запроса.
@@ -137,7 +155,7 @@ func (e Entities) Numbers() []NumberWrapper {
 
 type newrapper struct {
 	Start, End int
-	Value      netype
+	Value      ttype
 }
 
 // Entities контейнер для передачи необработанных именованных сущностей.
@@ -160,7 +178,7 @@ func unmarshalEntities(e []Entity) (Entities, error) {
 	return m, nil
 }
 
-func holder(t string) netype {
+func holder(t string) ttype {
 	switch t {
 	case NENameType:
 		return new(NEName)

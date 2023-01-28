@@ -1,6 +1,7 @@
 PROJECT_NAME=alice-coffee
 
 build:
+	protoc --go_out=$GOPATH/pkg/mod/ ../protos/vending/*.proto -I=../
 	go build -o ${PROJECT_NAME} cmd/main.go
 
 run: build

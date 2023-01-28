@@ -23,16 +23,3 @@ func (c CredentialsProvider) Retrieve(_ context.Context) (aws.Credentials, error
 		SecretAccessKey: c.secretKey,
 	}, nil
 }
-
-type EndpointResolverWithOptions struct {
-}
-
-func NewEndpointResolverWithOptions() *EndpointResolverWithOptions {
-	return &EndpointResolverWithOptions{}
-}
-
-func (e EndpointResolverWithOptions) ResolveEndpoint(_, _ string, _ ...interface{}) (aws.Endpoint, error) {
-	return aws.Endpoint{
-		URL: YaCloudApiUrl,
-	}, nil
-}

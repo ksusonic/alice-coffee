@@ -33,6 +33,7 @@ type Request struct {
 		NLU     struct {
 			Tokens   []string `json:"tokens"`
 			Entities []Entity `json:"entities,omitempty"`
+			Intents  Intents  `json:"intents,omitempty"`
 		} `json:"nlu"`
 	} `json:"request"`
 
@@ -90,7 +91,7 @@ func (req *Request) Payload() (map[string]interface{}, error) {
 	if req.Request.Payload != nil {
 		return req.Request.Payload.(map[string]interface{}), nil
 	}
-	return nil, errors.New("Payload is nil")
+	return nil, errors.New("payload is nil")
 }
 
 // SessionID идентификатор сессии.
@@ -118,7 +119,7 @@ func (req *Request) StateSession(key string) interface{} {
 	return session[key]
 }
 
-// State.Session Состояние сессии json строкой
+// StateSessionAsJson State.Session Состояние сессии json строкой
 func (req *Request) StateSessionAsJson() (string, error) {
 	data, err := json.Marshal(req.State.Session)
 
@@ -145,9 +146,11 @@ func (req *Request) clean() *Request {
 	req.Request.NLU = struct {
 		Tokens   []string `json:"tokens"`
 		Entities []Entity `json:"entities,omitempty"`
+		Intents  Intents  `json:"intents,omitempty"`
 	}{
 		[]string{},
 		[]Entity{},
+		Intents{},
 	}
 	req.Bearer = ""
 	return req
