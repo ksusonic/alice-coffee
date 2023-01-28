@@ -12,6 +12,9 @@ import (
 	"net/http/httputil"
 	"sync"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func init() {
@@ -50,22 +53,37 @@ func (updates Stream) Loop(f Handler) {
 }
 
 // StartServer регистрирует обработчик входящих пакетов.
-func StartServer(hookPath string, config Config) Stream {
+func StartServer(hookPath string, conf ServerConf) Stream {
 
 	stream := make(chan Kit, 1)
-	http.HandleFunc(hookPath, webhook(config, stream))
+	router := chi.NewRouter()
+
+	router.Use(middleware.Logger)
+	router.Use(middleware.RealIP)
+	router.Use(middleware.RequestID)
+	router.Use(middleware.Recoverer)
+
+	router.HandleFunc(hookPath, webhook(conf, stream))
 
 	go func() {
-		err := http.ListenAndServe(":8080", nil)
+		err := http.ListenAndServe(conf.Address, router)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	}()
-	// TODO log start
+
+	log.Println("Started alice-dialogs server on", conf.Address)
 	return stream
 }
 
-func webhook(conf Config, stream chan<- Kit) http.HandlerFunc {
+type ServerConf struct {
+	Address  string
+	Debug    bool
+	Timeout  time.Duration
+	AutoPong bool
+}
+
+func webhook(conf ServerConf, stream chan<- Kit) http.HandlerFunc {
 	reqPool := sync.Pool{
 		New: func() interface{} {
 			return new(Request)
