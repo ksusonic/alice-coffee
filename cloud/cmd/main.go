@@ -1,33 +1,34 @@
 package main
 
 import (
-	"log"
 	"time"
 
 	"github.com/ksusonic/alice-coffee/cloud/config"
-	"github.com/ksusonic/alice-coffee/cloud/internal/nlg"
-	"github.com/ksusonic/alice-coffee/cloud/internal/queue"
 	"github.com/ksusonic/alice-coffee/cloud/internal/scenario"
+	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/nlg"
+	"github.com/ksusonic/alice-coffee/cloud/internal/ws"
 	"github.com/ksusonic/alice-coffee/cloud/pkg/dialogs"
+	"go.uber.org/zap"
 )
 
 func main() {
 	conf, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal(err)
+		panic("Could not load config: " + err.Error())
 	}
+	logger := getLogger(conf.Debug)
 
+	c := ws.NewWebsocket(logger.Desugar().Named("websocket"))
 	updates := dialogs.StartServer("/hook", dialogs.ServerConf{
 		Address:  conf.Address,
 		Debug:    conf.Debug,
-		Timeout:  time.Duration(conf.Timeout),
+		Timeout:  time.Duration(conf.Dialogs.Timeout),
 		AutoPong: true,
-	})
+	}, c.Router)
 
 	ctx := scenario.Context{
-		MessageQueue: queue.NewMessageQueue(conf.QueueUrl, conf.SqsAccessKey, conf.SqsSecretKey),
+		Logger: logger,
 	}
-
 	d := scenario.NewIntentDispatcher(&ctx)
 
 	updates.Loop(func(k dialogs.Kit) *dialogs.Response {
@@ -42,7 +43,22 @@ func main() {
 			return result
 		}
 
-		log.Println("Could not make relevant response")
+		logger.Info("Could not make relevant response")
 		return resp.TextWithTTS(req.Text(), req.Text())
 	})
+}
+
+func getLogger(debug bool) *zap.SugaredLogger {
+	getSuggared := func(logger *zap.Logger, err error) *zap.SugaredLogger {
+		if err != nil {
+			panic(err)
+		}
+		return logger.Sugar()
+	}
+
+	if debug {
+		return getSuggared(zap.NewDevelopment())
+	} else {
+		return getSuggared(zap.NewProduction())
+	}
 }

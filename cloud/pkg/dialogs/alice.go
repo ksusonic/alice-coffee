@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"sync"
@@ -16,10 +15,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 // Kit структура для передачи данных в главный цикл.
 type Kit struct {
@@ -53,7 +48,7 @@ func (updates Stream) Loop(f Handler) {
 }
 
 // StartServer регистрирует обработчик входящих пакетов.
-func StartServer(hookPath string, conf ServerConf) Stream {
+func StartServer(hookPath string, conf ServerConf, routers ...chi.Router) Stream {
 
 	stream := make(chan Kit, 1)
 	router := chi.NewRouter()
@@ -62,6 +57,10 @@ func StartServer(hookPath string, conf ServerConf) Stream {
 	router.Use(middleware.RealIP)
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
+
+	for _, r := range routers {
+		router.Mount("/", r)
+	}
 
 	router.HandleFunc(hookPath, webhook(conf, stream))
 

@@ -1,13 +1,14 @@
 package scenario
 
 import (
-	"github.com/golang/protobuf/proto"
-	"github.com/ksusonic/alice-coffee/cloud/internal/nlg"
+	"encoding/json"
 	"log"
+	"time"
+
+	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/models"
+	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/nlg"
 
 	"github.com/ksusonic/alice-coffee/cloud/pkg/dialogs"
-
-	"github.com/ksusonic/alice-coffee/protos/request"
 )
 
 func MakeCoffee(
@@ -21,37 +22,41 @@ func MakeCoffee(
 
 func MakeCoffeeTyped(
 	ctx *Context,
-	req *dialogs.Request,
+	_ *dialogs.Request,
 	_ string,
 	slots dialogs.Slots,
 	resp *dialogs.Response) *dialogs.Response {
 
-	coffeeType := slots.Slots[IntentMakeCoffeeTypedCoffeeTypeSlot].Value
+	coffeeTypeValue := slots.Slots[IntentMakeCoffeeTypedCoffeeTypeSlot].Value
+	coffeeType := models.ParseCoffee(coffeeTypeValue)
+	if coffeeType == nil {
+		log.Println("no coffee type found for ", coffeeTypeValue)
+		coffeeType = &models.UnknownCoffee
+	}
 
 	// TODO state check
 
-	var sugarAmount uint32 = 0 // TODO
+	var sugarAmount uint = 0 // TODO
 
-	request := &requestpb.Request{
-		ID: int32(req.MessageID()),
-		Action: &requestpb.Request_MakeCoffee{MakeCoffee: &requestpb.MakeCoffeeAction{
-			CoffeeType:  coffeeTypeToEnum(coffeeType),
-			SugarAmount: sugarAmount,
-		}},
+	request := models.MakeCoffeeRequest{
+		ID:    time.Now().String(), // todo request-id
+		Type:  *coffeeType,
+		Sugar: sugarAmount,
 	}
-	data, err := proto.Marshal(request)
+
+	data, err := json.Marshal(request)
 	if err != nil {
 		log.Println(err)
 		return resp.TextWithTTS(nlg.ErrorPhrase())
 	}
 
-	messageId, err := ctx.MessageQueue.SendMessage(data)
+	err = ctx.Socket.SendMessage(data)
 	if err != nil {
 		log.Println(err)
 		return resp.TextWithTTS(nlg.ErrorPhrase())
 	}
 
-	log.Printf("sent to queue message_id=%s, body=%s\n", *messageId, request)
+	log.Printf("sent: %s\n", string(data))
 
-	return resp.TextWithTTS(nlg.MakingCoffeePhrase(coffeeTypeToHumanReadable(coffeeType), sugarAmount))
+	return resp.TextWithTTS(nlg.MakingCoffeePhrase(coffeeType.HumanReadable, sugarAmount))
 }
