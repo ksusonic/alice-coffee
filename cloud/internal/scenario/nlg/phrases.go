@@ -38,7 +38,7 @@ func randomError() string {
 	return making[rand.Intn(len(making))]
 }
 
-func MakingCoffeePhrase(coffeeType string, sugar uint32) (string, string) {
+func MakingCoffeePhrase(coffeeType string, sugar uint) (string, string) {
 	phrase := fmt.Sprintf("%s %s %s", randomOk(), randomMaking(), coffeeType)
 	if sugar > 0 {
 		phrase += "c сахаром."

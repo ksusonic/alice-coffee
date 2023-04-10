@@ -1,9 +1,14 @@
 package scenario
 
 import (
-	"github.com/ksusonic/alice-coffee/cloud/internal/queue"
+	"go.uber.org/zap"
 )
 
+type WebSocket interface {
+	SendMessage(data []byte) error
+}
+
 type Context struct {
-	MessageQueue *queue.MessageQueue
+	Logger *zap.SugaredLogger
+	Socket WebSocket
 }
