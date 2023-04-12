@@ -1,6 +1,7 @@
 package scenario
 
 import (
+	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/nlg"
 	"github.com/ksusonic/alice-coffee/cloud/pkg/dialogs"
 )
 
@@ -11,15 +12,15 @@ type IntentDispatcher struct {
 	Context      *Context
 }
 
-func NewIntentDispatcher(
-	ctx *Context,
-) *IntentDispatcher {
+var IntentMapping = map[string]HandlerFunc{
+	IntentMakeCoffee:      MakeCoffee,
+	IntentMakeCoffeeTyped: MakeCoffeeTyped,
+}
+
+func NewIntentDispatcher(ctx *Context) *IntentDispatcher {
 	return &IntentDispatcher{
-		IntentToFunc: map[string]HandlerFunc{
-			IntentMakeCoffee:      MakeCoffee,
-			IntentMakeCoffeeTyped: MakeCoffeeTyped,
-		},
-		Context: ctx,
+		IntentToFunc: IntentMapping,
+		Context:      ctx,
 	}
 }
 
@@ -27,19 +28,16 @@ func (d *IntentDispatcher) TryResponse(req *dialogs.Request, resp *dialogs.Respo
 	if len(req.Request.NLU.Intents) == 0 {
 		return nil
 	}
-	intent, slots := firstIntent(req.Request.NLU.Intents)
 
-	f, ok := d.IntentToFunc[intent]
-	if !ok {
-		return nil
+	for intent, slots := range req.Request.NLU.Intents {
+		f, ok := d.IntentToFunc[intent]
+		if ok {
+			return f(d.Context, req, intent, slots, resp)
+		}
 	}
-
-	return f(d.Context, req, intent, slots, resp)
+	return resp
 }
 
-func firstIntent(i dialogs.Intents) (string, dialogs.Slots) {
-	for intent, slots := range i {
-		return intent, slots
-	}
-	return "", dialogs.Slots{}
+func (d *IntentDispatcher) IrrelevantResponse(_ *dialogs.Request, resp *dialogs.Response) *dialogs.Response {
+	return resp.TextWithTTS(nlg.IrrelevantPhrase())
 }

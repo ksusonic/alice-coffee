@@ -52,3 +52,13 @@ func ErrorPhrase() (string, string) {
 	err := randomError()
 	return err, err
 }
+
+func IrrelevantPhrase() (string, string) {
+	var irrels = []string{
+		"Не смогла понять вас, извините.",
+		"Упс, кажется, я еще так не умею.",
+		"Простите, не совсем вас поняла.",
+	}
+	chosen := irrels[rand.Intn(len(irrels))]
+	return chosen, chosen
+}

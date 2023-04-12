@@ -44,7 +44,7 @@ func main() {
 		}
 
 		logger.Info("Could not make relevant response")
-		return resp.TextWithTTS(req.Text(), req.Text())
+		return resp.TextWithTTS(nlg.IrrelevantPhrase())
 	})
 }
 
