@@ -52,7 +52,7 @@ func main() {
 	osSignal := make(chan os.Signal, 1)
 	signal.Notify(osSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	logger.Debug("caught", zap.String("signal", (<-osSignal).String()))
+	logger.Debug("caught " + (<-osSignal).String())
 
 	toCtx, toCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer toCancel()

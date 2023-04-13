@@ -6,6 +6,7 @@ import (
 
 	"github.com/ksusonic/alice-coffee/cloud/internal/ctx"
 	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/nlg"
+	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/scene"
 	"github.com/ksusonic/alice-coffee/cloud/pkg/dialogs"
 	"go.uber.org/zap"
 )
@@ -19,8 +20,8 @@ type IntentDispatcher struct {
 }
 
 var IntentMapping = map[string]HandlerFunc{
-	IntentMakeCoffee:      MakeCoffee,
-	IntentMakeCoffeeTyped: MakeCoffeeTyped,
+	IntentMakeCoffee:      scene.MakeCoffee,
+	IntentMakeCoffeeTyped: scene.MakeCoffeeTyped,
 }
 
 func NewIntentDispatcher(globalCtx *ctx.GlobalCtx, logger *zap.SugaredLogger) *IntentDispatcher {
@@ -76,8 +77,4 @@ func (d *IntentDispatcher) TryResponse(sceneContext *ctx.SceneCtx, req *dialogs.
 
 	d.logger.Warn("intents are unknown: ", strings.Join(req.Request.NLU.Intents.Names(), ", "))
 	return nil
-}
-
-func (d *IntentDispatcher) IrrelevantResponse(_ *dialogs.Request, resp *dialogs.Response) *dialogs.Response {
-	return resp.TextWithTTS(nlg.IrrelevantPhrase())
 }

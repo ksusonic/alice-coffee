@@ -1,7 +1,6 @@
-package scenario
+package scene
 
 import (
-	"log"
 	"time"
 
 	"github.com/ksusonic/alice-coffee/cloud/internal/ctx"
@@ -27,7 +26,7 @@ func MakeCoffeeTyped(
 	slots dialogs.Slots,
 	resp *dialogs.Response) *dialogs.Response {
 
-	coffeeTypeValue := slots.Slots[IntentMakeCoffeeTypedCoffeeTypeSlot].Value
+	coffeeTypeValue := slots.Slots["coffee_type"].Value
 	coffeeType := models.ParseCoffee(coffeeTypeValue)
 	if coffeeType == nil {
 		ctx.Logger.Errorf("no coffee type found for %s", coffeeTypeValue)
@@ -52,8 +51,6 @@ func MakeCoffeeTyped(
 		return resp.TextWithTTS(nlg.ErrorPhrase())
 	}
 	ctx.Logger.Info("sent make_coffee request", zap.Any("request", request))
-
-	log.Printf("sent: %v\n", request)
 
 	return resp.TextWithTTS(nlg.MakingCoffeePhrase(coffeeType.HumanReadable, sugarAmount))
 }
