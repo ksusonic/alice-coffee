@@ -16,7 +16,7 @@ func MakeCoffee(
 	_ string,
 	_ dialogs.Slots,
 	resp *dialogs.Response) *dialogs.Response {
-	return resp.TextWithTTS(nlg.WhichCoffee, nlg.WhichCoffee)
+	return resp.Text(nlg.WhichCoffee)
 }
 
 func MakeCoffeeTyped(
@@ -35,7 +35,7 @@ func MakeCoffeeTyped(
 
 	if ctx.GlobalCtx.Socket.CheckActive() == false {
 		ctx.Logger.Error("no connection to vending")
-		return resp.TextWithTTS(nlg.NoConnectionPhrase())
+		return resp.Text(nlg.NoConnectionPhrase())
 	}
 
 	var sugarAmount uint = 0 // TODO
@@ -48,9 +48,9 @@ func MakeCoffeeTyped(
 	err := ctx.GlobalCtx.Socket.SendJSON(request)
 	if err != nil {
 		ctx.Logger.Error("could not send make_coffee request", zap.Error(err), zap.String("id", request.ID))
-		return resp.TextWithTTS(nlg.ErrorPhrase())
+		return resp.Text(nlg.ErrorPhrase())
 	}
 	ctx.Logger.Info("sent make_coffee request", zap.Any("request", request))
 
-	return resp.TextWithTTS(nlg.MakingCoffeePhrase(coffeeType.HumanReadable, sugarAmount))
+	return resp.Text(nlg.MakingCoffeePhrase(coffeeType.HumanReadable, sugarAmount))
 }

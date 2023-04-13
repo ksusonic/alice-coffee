@@ -22,6 +22,7 @@ type IntentDispatcher struct {
 var IntentMapping = map[string]HandlerFunc{
 	IntentMakeCoffee:      scene.MakeCoffee,
 	IntentMakeCoffeeTyped: scene.MakeCoffeeTyped,
+	IntentWhatCanYouDo:    scene.WhatCanYouDo,
 }
 
 func NewIntentDispatcher(globalCtx *ctx.GlobalCtx, logger *zap.SugaredLogger) *IntentDispatcher {
@@ -49,7 +50,7 @@ func (d *IntentDispatcher) Handler(c context.Context, k dialogs.Kit) (response *
 	defer func() {
 		if r := recover(); r != nil {
 			d.logger.Errorf("recovered scene error: %v", r)
-			response = resp.TextWithTTS(nlg.ErrorPhrase())
+			response = resp.Text(nlg.ErrorPhrase())
 		}
 	}()
 
@@ -58,7 +59,7 @@ func (d *IntentDispatcher) Handler(c context.Context, k dialogs.Kit) (response *
 		return result
 	}
 	d.logger.Warn("Could not make relevant response")
-	return resp.TextWithTTS(nlg.IrrelevantPhrase())
+	return resp.Text(nlg.IrrelevantPhrase())
 }
 
 func (d *IntentDispatcher) TryResponse(sceneContext *ctx.SceneCtx, req *dialogs.Request, resp *dialogs.Response) *dialogs.Response {
