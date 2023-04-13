@@ -1,0 +1,95 @@
+### Инициализация диалога
+POST localhost:8080/hook
+Content-Type: application/json
+
+{
+  "meta": {
+    "locale": "ru-RU",
+    "timezone": "UTC",
+    "client_id": "ru.yandex.searchplugin/7.16 (none none; android 4.4.2)",
+    "interfaces": {
+      "screen": {},
+      "payments": {},
+      "account_linking": {}
+    }
+  },
+  "session": {
+    "message_id": 123,
+    "session_id": "some-session-id",
+    "skill_id": "some-skill-id",
+    "user": {
+      "user_id": "some-userid"
+    },
+    "new": true
+  },
+  "request": {
+    "command": "",
+    "original_utterance": "",
+    "nlu": {
+      "tokens": [],
+      "entities": [],
+      "intents": {}
+    },
+    "markup": {
+      "dangerous_context": false
+    },
+    "type": "SimpleUtterance"
+  },
+  "version": "1.0"
+}
+
+### Сделай кофе
+POST localhost:8080/hook
+Content-Type: application/json
+
+{
+  "meta": {
+    "locale": "ru-RU",
+    "timezone": "UTC",
+    "client_id": "ru.yandex.searchplugin/7.16 (none none; android 4.4.2)",
+    "interfaces": {
+      "screen": {},
+      "payments": {},
+      "account_linking": {}
+    }
+  },
+  "session": {
+    "message_id": 0,
+    "session_id": "some-session_id",
+    "skill_id": "some-skill_id",
+    "user": {
+      "user_id": "some-user_id"
+    },
+    "new": false
+  },
+  "request": {
+    "command": "сделай капучино",
+    "original_utterance": "Сделай капучино",
+    "nlu": {
+      "tokens": [
+        "сделай",
+        "капучино"
+      ],
+      "entities": [],
+      "intents": {
+        "alice.make_coffee_typed": {
+          "slots": {
+            "coffee_type": {
+              "type": "CoffeeType",
+              "tokens": {
+                "start": 1,
+                "end": 2
+              },
+              "value": "cappuccino"
+            }
+          }
+        }
+      }
+    },
+    "markup": {
+      "dangerous_context": false
+    },
+    "type": "SimpleUtterance"
+  },
+  "version": "1.0"
+}

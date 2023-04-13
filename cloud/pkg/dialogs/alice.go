@@ -35,48 +35,33 @@ func (k Kit) Init() (*Request, *Response) {
 type Stream <-chan Kit
 
 // Handler сигнатура функции, передаваемой методу Loop().
-type Handler func(k Kit) *Response
+type Handler func(ctx context.Context, k Kit) *Response
 
 // Loop отвечает за работу главного цикла.
-func (updates Stream) Loop(f Handler) {
-	for kit := range updates {
-		go func(k Kit) {
-			k.c <- f(k)
-			close(k.c)
-		}(kit)
+func (updates Stream) Loop(ctx context.Context, f Handler) {
+	for {
+		select {
+		case kit := <-updates:
+			go func(k Kit) {
+				k.c <- f(ctx, k)
+				close(k.c)
+			}(kit)
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
-// StartServer регистрирует обработчик входящих пакетов.
-func StartServer(hookPath string, conf ServerConf, routers ...chi.Router) Stream {
-
+// Router отдает обработчик входящих сообщений и канал
+func Router(conf ServerConf) (http.Handler, Stream) {
 	stream := make(chan Kit, 1)
 	router := chi.NewRouter()
-
-	router.Use(middleware.Logger)
-	router.Use(middleware.RealIP)
-	router.Use(middleware.RequestID)
-	router.Use(middleware.Recoverer)
-
-	for _, r := range routers {
-		router.Mount("/", r)
-	}
-
-	router.HandleFunc(hookPath, webhook(conf, stream))
-
-	go func() {
-		err := http.ListenAndServe(conf.Address, router)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	log.Println("Started alice-dialogs server on", conf.Address)
-	return stream
+	router.Use(middleware.AllowContentType("application/json"))
+	router.HandleFunc("/", webhook(conf, stream))
+	return router, stream
 }
 
 type ServerConf struct {
-	Address  string
 	Debug    bool
 	Timeout  time.Duration
 	AutoPong bool
@@ -100,7 +85,7 @@ func webhook(conf ServerConf, stream chan<- Kit) http.HandlerFunc {
 			_ = Body.Close()
 		}(r.Body)
 
-		ctx, cancel := context.WithTimeout(r.Context(), time.Duration(conf.Timeout)*time.Millisecond)
+		ctx, cancel := context.WithTimeout(r.Context(), conf.Timeout*time.Millisecond)
 		defer cancel()
 
 		if conf.Debug {

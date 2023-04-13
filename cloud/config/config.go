@@ -10,11 +10,18 @@ import (
 )
 
 type Config struct {
-	Address string `yaml:"-"`
-	Debug   bool   `yaml:"debug"`
-	Dialogs struct {
-		Timeout int64 `yaml:"timeout"`
-	} `yaml:"dialogs"`
+	Debug   bool          `yaml:"debug"`
+	Server  ServerConfig  `json:"server"`
+	Dialogs DialogsConfig `yaml:"dialogs"`
+}
+
+type ServerConfig struct {
+	Debug   bool
+	Address string `yaml:"address"`
+}
+
+type DialogsConfig struct {
+	Timeout int64 `yaml:"timeout"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -22,7 +29,7 @@ func LoadConfig() (*Config, error) {
 
 	var configPath string
 	flag.StringVar(&configPath, "config", "", "path to config file")
-	flag.StringVar(&config.Address, "address", "0.0.0.0:8080", "server address like 127.0.0.1:8080")
+	flag.StringVar(&config.Server.Address, "address", "127.0.0.1:8080", "server address like 127.0.0.1:8080")
 	flag.Int64Var(&config.Dialogs.Timeout, "timeout", 3000, "timeout in ms")
 	flag.BoolVar(&config.Debug, "debug", false, "debug mode")
 	flag.Parse()
@@ -46,6 +53,7 @@ func LoadConfig() (*Config, error) {
 	if err := env.Parse(&config); err != nil {
 		return nil, err
 	}
+	config.Server.Debug = config.Debug
 
 	return &config, nil
 }

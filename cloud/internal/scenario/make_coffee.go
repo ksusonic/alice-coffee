@@ -1,18 +1,18 @@
 package scenario
 
 import (
-	"encoding/json"
 	"log"
 	"time"
 
+	"github.com/ksusonic/alice-coffee/cloud/internal/ctx"
 	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/models"
 	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/nlg"
-
 	"github.com/ksusonic/alice-coffee/cloud/pkg/dialogs"
+	"go.uber.org/zap"
 )
 
 func MakeCoffee(
-	_ *Context,
+	_ *ctx.SceneCtx,
 	_ *dialogs.Request,
 	_ string,
 	_ dialogs.Slots,
@@ -21,7 +21,7 @@ func MakeCoffee(
 }
 
 func MakeCoffeeTyped(
-	ctx *Context,
+	ctx *ctx.SceneCtx,
 	_ *dialogs.Request,
 	_ string,
 	slots dialogs.Slots,
@@ -30,11 +30,14 @@ func MakeCoffeeTyped(
 	coffeeTypeValue := slots.Slots[IntentMakeCoffeeTypedCoffeeTypeSlot].Value
 	coffeeType := models.ParseCoffee(coffeeTypeValue)
 	if coffeeType == nil {
-		log.Println("no coffee type found for ", coffeeTypeValue)
+		ctx.Logger.Errorf("no coffee type found for %s", coffeeTypeValue)
 		coffeeType = &models.UnknownCoffee
 	}
 
-	// TODO state check
+	if ctx.GlobalCtx.Socket.CheckActive() == false {
+		ctx.Logger.Error("no connection to vending")
+		return resp.TextWithTTS(nlg.NoConnectionPhrase())
+	}
 
 	var sugarAmount uint = 0 // TODO
 
@@ -43,20 +46,14 @@ func MakeCoffeeTyped(
 		Type:  *coffeeType,
 		Sugar: sugarAmount,
 	}
-
-	data, err := json.Marshal(request)
+	err := ctx.GlobalCtx.Socket.SendJSON(request)
 	if err != nil {
-		log.Println(err)
+		ctx.Logger.Error("could not send make_coffee request", zap.Error(err), zap.String("id", request.ID))
 		return resp.TextWithTTS(nlg.ErrorPhrase())
 	}
+	ctx.Logger.Info("sent make_coffee request", zap.Any("request", request))
 
-	err = ctx.Socket.SendMessage(data)
-	if err != nil {
-		log.Println(err)
-		return resp.TextWithTTS(nlg.ErrorPhrase())
-	}
-
-	log.Printf("sent: %s\n", string(data))
+	log.Printf("sent: %v\n", request)
 
 	return resp.TextWithTTS(nlg.MakingCoffeePhrase(coffeeType.HumanReadable, sugarAmount))
 }

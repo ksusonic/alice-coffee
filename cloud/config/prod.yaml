@@ -1,3 +1,5 @@
-debug: true
+debug: false
+server:
+  address: 0.0.0.0:8080
 dialogs:
   timeout: 2700

@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/ksusonic/alice-coffee/cloud/config"
+	customCtx "github.com/ksusonic/alice-coffee/cloud/internal/ctx"
 	"github.com/ksusonic/alice-coffee/cloud/internal/scenario"
-	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/nlg"
+	"github.com/ksusonic/alice-coffee/cloud/internal/server"
 	"github.com/ksusonic/alice-coffee/cloud/internal/ws"
 	"github.com/ksusonic/alice-coffee/cloud/pkg/dialogs"
 	"go.uber.org/zap"
@@ -18,47 +23,58 @@ func main() {
 	}
 	logger := getLogger(conf.Debug)
 
-	c := ws.NewWebsocket(logger.Desugar().Named("websocket"))
-	updates := dialogs.StartServer("/hook", dialogs.ServerConf{
-		Address:  conf.Address,
+	webSocket := ws.NewWebsocket(logger.Named("websocket"))
+	dialogsRouter, updates := dialogs.Router(dialogs.ServerConf{
 		Debug:    conf.Debug,
 		Timeout:  time.Duration(conf.Dialogs.Timeout),
 		AutoPong: true,
-	}, c.Router)
-
-	ctx := scenario.Context{
-		Logger: logger,
-	}
-	d := scenario.NewIntentDispatcher(&ctx)
-
-	updates.Loop(func(k dialogs.Kit) *dialogs.Response {
-		req, resp := k.Init()
-
-		if req.IsNewSession() {
-			return resp.Text(nlg.Greeting)
-		}
-
-		result := d.TryResponse(req, resp)
-		if result != nil {
-			return result
-		}
-
-		logger.Info("Could not make relevant response")
-		return resp.TextWithTTS(nlg.IrrelevantPhrase())
 	})
+
+	dispatcher := scenario.NewIntentDispatcher(&customCtx.GlobalCtx{
+		Socket: webSocket,
+	}, logger.Named("dispatcher").Sugar())
+
+	s := server.NewServer(&conf.Server, logger.Named("server"),
+		server.Route{
+			Pattern: "/hook",
+			Handler: dialogsRouter,
+		},
+		server.Route{
+			Pattern: "/ws",
+			Handler: webSocket.Router,
+		})
+	srv := s.Run() // start server
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go updates.Loop(ctx, dispatcher.Handler)
+
+	osSignal := make(chan os.Signal, 1)
+	signal.Notify(osSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	logger.Debug("caught", zap.String("signal", (<-osSignal).String()))
+
+	toCtx, toCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer toCancel()
+
+	if srvErr := srv.Shutdown(toCtx); srvErr != nil {
+		logger.Fatal("server shutdown error", zap.Error(srvErr))
+	}
+
+	logger.Info("server stopped")
 }
 
-func getLogger(debug bool) *zap.SugaredLogger {
-	getSuggared := func(logger *zap.Logger, err error) *zap.SugaredLogger {
+func getLogger(debug bool) *zap.Logger {
+	retireLogger := func(logger *zap.Logger, err error) *zap.Logger {
 		if err != nil {
 			panic(err)
 		}
-		return logger.Sugar()
+		return logger
 	}
 
 	if debug {
-		return getSuggared(zap.NewDevelopment())
+		return retireLogger(zap.NewDevelopment())
 	} else {
-		return getSuggared(zap.NewProduction())
+		return retireLogger(zap.NewProduction())
 	}
 }
