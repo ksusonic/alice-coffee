@@ -33,7 +33,7 @@ func MakeCoffeeTyped(
 		coffeeType = &models.UnknownCoffee
 	}
 
-	if ctx.GlobalCtx.Socket.CheckActive() == false {
+	if !ctx.GlobalCtx.Socket.CheckActive() {
 		ctx.Logger.Error("no connection to vending")
 		return resp.Text(nlg.NoConnectionPhrase())
 	}

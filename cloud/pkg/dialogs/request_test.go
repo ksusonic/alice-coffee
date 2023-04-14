@@ -310,9 +310,9 @@ func TestRequest_StateSession(t *testing.T) {
 		assert.Equal(t, "exampleString", req.StateSession("string_value"))
 		assert.Equal(t, []interface{}{1.0, 2.0, 3.0, 4.0}, req.StateSession("array_value"))
 		assert.Equal(t, map[string]interface{}{"one": "one"}, req.StateSession("struct_value"))
-		stateJson, err := req.StateSessionAsJson()
+		stateJSON, err := req.StateSessionAsJSON()
 		if assert.NoError(t, err) {
-			assert.Equal(t, `{"array_value":[1,2,3,4],"int_value":42,"string_value":"exampleString","struct_value":{"one":"one"}}`, stateJson)
+			assert.Equal(t, `{"array_value":[1,2,3,4],"int_value":42,"string_value":"exampleString","struct_value":{"one":"one"}}`, stateJSON)
 		}
 	})
 }

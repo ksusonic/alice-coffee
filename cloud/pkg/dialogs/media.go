@@ -84,9 +84,7 @@ func (l *List) Add(id, title, desc string, button ...ImageButton) *List {
 
 // AddImages добавляет одну или несколько картинок в заготовку для списка.
 func (l *List) AddImages(images ...Image) *List {
-	for _, v := range images {
-		l.Images = append(l.Images, v)
-	}
+	l.Images = append(l.Images, images...)
 	return l
 }
 

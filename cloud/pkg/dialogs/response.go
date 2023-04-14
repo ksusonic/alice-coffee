@@ -1,7 +1,6 @@
 package dialogs
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -226,8 +225,7 @@ func (resp *Response) AddSessionState(key string, data interface{}) error {
 		stateBag[key] = data
 		resp.SessionState = stateBag
 	} else {
-		return errors.New(fmt.Sprintf("session_state: can't set data because session_state have type %T",
-			resp.SessionState))
+		return fmt.Errorf("session_state: can't set data because session_state have type %T", resp.SessionState)
 	}
 	return nil
 }

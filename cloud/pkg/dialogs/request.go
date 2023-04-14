@@ -88,8 +88,8 @@ func (req *Request) DangerousContext() bool {
 	return false
 }
 
-// ReqId собирает единый id запроса по формату: <message_id>__<session_id>
-func (req *Request) ReqId() string {
+// ReqID собирает единый id запроса по формату: <message_id>__<session_id>
+func (req *Request) ReqID() string {
 	builder := strings.Builder{}
 	builder.WriteString(strconv.FormatInt(int64(req.Session.MessageID), 10))
 	builder.WriteString("__")
@@ -130,8 +130,8 @@ func (req *Request) StateSession(key string) interface{} {
 	return session[key]
 }
 
-// StateSessionAsJson State.Session Состояние сессии json строкой
-func (req *Request) StateSessionAsJson() (string, error) {
+// StateSessionAsJSON State.Session Состояние сессии json строкой
+func (req *Request) StateSessionAsJSON() (string, error) {
 	data, err := json.Marshal(req.State.Session)
 
 	return string(data), err
