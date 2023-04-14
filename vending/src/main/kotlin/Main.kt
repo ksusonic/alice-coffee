@@ -1,18 +1,17 @@
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import queue.MessageHandler
+import server.ServerController
 
 private val logger = KotlinLogging.logger {}
 
-suspend fun main() {
+fun main() {
     logger.info("Starting Alice coffee app!")
 
-    val mq = MessageHandler()
+    val vending = vending.VendingProtocol("127.0.0.1", 8081)
+    val server = ServerController("ws://127.0.0.1:8080/ws", vending)
 
-//    val vending = vending.VendingProtocol()
-    // vending.connect()
-
-    while (true) {
-        val rawCommand = mq.receiveAndDeleteMessage()
-        logger.debug("got command: $rawCommand")
+    vending.connect()
+    runBlocking {
+        server.connect()
     }
 }

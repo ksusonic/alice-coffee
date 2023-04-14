@@ -6,7 +6,7 @@ import kotlin.experimental.and
 import kotlin.experimental.inv
 import kotlin.experimental.or
 
-class VendingProtocol internal constructor() {
+class VendingProtocol internal constructor(private val host: String, private val port: Int) {
     private val logger = KotlinLogging.logger {}
 
     private lateinit var socket: VendingSocket
@@ -14,7 +14,7 @@ class VendingProtocol internal constructor() {
     private var timer: java.util.Timer? = null
     var status: Status = Status()
 
-    fun connect(host: String, port: Int = 999) {
+    fun connect() {
         try {
             socket = VendingSocket(host, port) //socket = new socket("192.168.232.2", 1024);
         } catch (e: ConnectException) {
@@ -43,15 +43,15 @@ class VendingProtocol internal constructor() {
     fun syncIfNeed(data: ByteArray): Int {
         return if (data[2] == errorCode) {
             if (cmdSync() == 0) {
-                YES
-            } else noAnsw
-        } else NO
+                yes
+            } else noAnswer
+        } else no
     }
 
-    private val YES = 16
-    private val NO = -16
-    private val noAnsw = -17
-    val success = 32
+    private val yes = 16
+    private val no = -16
+    private val noAnswer = -17
+    private val success = 32
     private val fail = -32
     private var lastMakeCmdStatus = fail
     private var pollStatus = fail
@@ -74,24 +74,24 @@ class VendingProtocol internal constructor() {
                         cmdSync() //todo check for results
                     }
                 } else {
-                    toLog("Reconnecting...")
+                    logger.info("Reconnecting...")
                     socket.reconnect()
                     error++
                 }
             }
 
             makeACoffeeEvent -> {
-                toLog("makeACoffeeEvent")
+                logger.info("makeACoffeeEvent")
                 if (data != null) {
                     if (cmdSell(data[0], data[1]) == 0) {
-                        toLog("cmdSellSended, answ = " + bytesToHex(socket.getAnswer()))
+                        logger.debug("cmdSellSended, answ = " + bytesToHex(socket.getAnswer()))
                         val answ: ByteArray? = socket.getAnswer()
                         if (answ != null) {
                             if (answ[2].toInt() == 0) //no errors
                             {
                                 lastMakeCmdStatus = success //TODO УБРАТЬ!
                                 val sellStatus = logic(isSellSucceedEvent, null) //TODO Check for process
-                                return if (sellStatus == YES) {
+                                return if (sellStatus == yes) {
                                     lastMakeCmdStatus = success
                                     logicBusy = false
                                     success //TODO change to 0
@@ -100,7 +100,7 @@ class VendingProtocol internal constructor() {
                                     fail //TODO change to -7
                                 }
                             } else {
-                                toLog("cmdSellFail")
+                                logger.error("cmdSellFail")
                                 if (answ[2] == errorCode) {
                                     cmdSync()
                                     logicBusy = false
@@ -111,7 +111,7 @@ class VendingProtocol internal constructor() {
                             logger.error("Could not get answer from socket")
                         }
                     } else {
-                        toLog("No response to cmdSell. Retrying...")
+                        logger.error("No response to cmdSell. Retrying...")
                         socket.reconnect()
                         error++
                         logicBusy = false
@@ -128,27 +128,27 @@ class VendingProtocol internal constructor() {
 
             checkStatusEvent -> {}
             isSellSucceedEvent -> {
-                toLog("isSellSucceedEvent")
+                logger.debug("isSellSucceedEvent")
                 return if (cmdIsSellSucceed() == 0) {
                     val answ: ByteArray? = socket.getAnswer()
                     if (answ != null) {
                         if (answ[4].toInt() == 0x01) {
-                            toLog("Sell succeed")
+                            logger.info("Sell succeed")
                             logicBusy = false
-                            YES
+                            yes
                         } else {
-                            toLog("Sell failed?")
+                            logger.info("Sell failed?")
                             logicBusy = false
-                            NO
+                            no
                         }
                     } else {
 
                         isSellSucceedEvent
                     }
                 } else {
-                    toLog("No response to cmdIsSellSucceed")
+                    logger.error("No response to cmdIsSellSucceed")
                     logicBusy = false
-                    noAnsw
+                    noAnswer
                 }
             }
 
@@ -170,7 +170,7 @@ class VendingProtocol internal constructor() {
                             }
                         }
                     } else {
-                        toLog("No responce to cmdPoll. Retrying...")
+                        logger.error("No responce to cmdPoll. Retrying...")
                         socket.reconnect()
                         error++
                         logicBusy = false
@@ -240,12 +240,10 @@ class VendingProtocol internal constructor() {
         return 0
     }
 
-    var logicBusy = false
+    private var logicBusy = false
     var pollData: ByteArray? = null
 
     inner class Status internal constructor() {
-        var a = 0
-        var b = 0
         val isCupIsStillHere: Boolean
             get() {
                 if (pollData != null) {
@@ -277,7 +275,7 @@ class VendingProtocol internal constructor() {
         }
     }
 
-    fun isCrcCorrect(data: ByteArray): Boolean {
+    private fun isCrcCorrect(data: ByteArray): Boolean {
         var crc = 0xAA
         var i = 1
         while (i < data[3] + 3 /*+ 1*/ && i < data.size) {
@@ -288,7 +286,7 @@ class VendingProtocol internal constructor() {
         return crc == data[4].toInt()
     }
 
-    fun recoverBadBytes(data: ByteArray): ByteArray {
+    private fun recoverBadBytes(data: ByteArray): ByteArray {
         var reduce = 0
         for (datum in data) if (datum.toInt() == 0x28) reduce++
         val tmp: java.nio.ByteBuffer = java.nio.ByteBuffer.allocate(data.size - reduce)
@@ -308,7 +306,7 @@ class VendingProtocol internal constructor() {
         return if (isCrcCorrect(badData)) badData else null
     }
 
-    fun crc(data: ByteArray): Byte {
+    private fun crc(data: ByteArray): Byte {
         var crc = 0xAA
         var i = 1
         while (i < data[3] + 3 + 1 && i < data.size) {
@@ -319,7 +317,7 @@ class VendingProtocol internal constructor() {
         return (crc and 0xFF).toByte()
     }
 
-    fun replaceBadBytes(data: ByteArray): ByteArray {
+    private fun replaceBadBytes(data: ByteArray): ByteArray {
         var expand = 0
         for (i in 1 until data.size) if (data[i] == 0xD7.toByte() || data[i] == 0x28.toByte()) expand++
         if (expand == 0) return data
@@ -334,28 +332,28 @@ class VendingProtocol internal constructor() {
         return tmp.array()
     }
 
-    var currentID = 0
-    fun formRequest(data: ByteArray): Int {
+    private var currentID = 0
+    private fun formRequest(data: ByteArray): Int {
         var data = data
         data[0] = 0xD7.toByte()
         data[1] = (currentID and 0xFF).toByte()
         data[4 + data[3]] = crc(data)
         data = replaceBadBytes(data)
-        toLog("SENDING: " + bytesToHex(data))
+        logger.debug("SENDING: " + bytesToHex(data))
         val status: Int = socket.send(data)
         if (status == 0) if (currentID == 255) currentID = 0 else currentID++
-        toLog("Received: " + bytesToHex(socket.getAnswer()))
+        logger.debug("Received: " + bytesToHex(socket.getAnswer()))
         return status
     }
 
-    fun cmdSync(): Int {
+    private fun cmdSync(): Int {
         val data = ByteArray(5)
         data[2] = 0x00
         data[3] = 0
         return formRequest(data)
     }
 
-    fun cmdPoll(): Int {
+    private fun cmdPoll(): Int {
         val data = ByteArray(5)
         data[2] = 0x01
         data[3] = 0
@@ -373,7 +371,7 @@ class VendingProtocol internal constructor() {
         return formRequest(data)
     }
 
-    fun cmdSell(coffeeType: Int, sugar: Int): Int {
+    private fun cmdSell(coffeeType: Int, sugar: Int): Int {
         val data = ByteArray(3 + 5)
         data[2] = 0x04
         data[3] = 3
@@ -383,7 +381,7 @@ class VendingProtocol internal constructor() {
         return formRequest(data)
     }
 
-    fun cmdIsSellSucceed(): Int {
+    private fun cmdIsSellSucceed(): Int {
         val data = ByteArray(5)
         data[2] = 0x05
         data[3] = 0
@@ -423,19 +421,6 @@ class VendingProtocol internal constructor() {
     fun makeACoffee(type: Int, sugar: Int): Int {
         lastMakeCmdStatus = fail
         return logic(makeACoffeeEvent, intArrayOf(type, sugar))
-    }
-
-    var logData: String? = null
-
-    fun toLog(text: String) {
-        logData += java.util.Calendar.getInstance().getTime().toString() + " " + text + "\n"
-    }
-
-    @JvmName("getLogData1")
-    fun getLogData(): String? {
-        val toSend = logData
-        logData = null
-        return toSend
     }
 
     fun readPoll(): Int {
