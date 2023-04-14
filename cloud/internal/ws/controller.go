@@ -59,6 +59,12 @@ func NewWebsocket(logger *zap.Logger) *WebSocket {
 }
 
 func (c *WebSocket) wsEndpoint(w http.ResponseWriter, r *http.Request) {
+	if c.conn != nil {
+		c.Logger.Error("has already connected with", zap.String("host", c.conn.RemoteAddr().String()))
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+
 	conn, err := c.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		c.Logger.Error("conn upgrade failed: %v", zap.Error(err))
