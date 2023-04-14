@@ -19,5 +19,5 @@ type SceneCtx struct {
 	Ctx       context.Context
 	GlobalCtx *GlobalCtx
 	Logger    *zap.SugaredLogger
-	ReqId     string
+	ReqID     string
 }

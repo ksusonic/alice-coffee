@@ -45,7 +45,7 @@ func (d *IntentDispatcher) Handler(c context.Context, k dialogs.Kit) (response *
 			Socket: d.globalCtx.Socket,
 		},
 		Logger: d.logger.Named("scene"),
-		ReqId:  req.ReqID(),
+		ReqID:  req.ReqID(),
 	}
 	defer func() {
 		if r := recover(); r != nil {
