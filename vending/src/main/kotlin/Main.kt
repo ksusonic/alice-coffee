@@ -1,6 +1,7 @@
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import server.ServerController
+import kotlin.system.exitProcess
 
 private val logger = KotlinLogging.logger {}
 
@@ -10,8 +11,17 @@ fun main() {
     val vending = vending.VendingProtocol("127.0.0.1", 8081)
     val server = ServerController("ws://127.0.0.1:8080/ws", vending)
 
-    vending.connect()
+    logger.info("starting cloud-client")
     runBlocking {
-        server.connect()
+        while (true) {
+            try {
+                server.serve()
+            } catch (e: kotlinx.coroutines.channels.ClosedReceiveChannelException) {
+                logger.error("caught ClosedReceiveChannelException: $e")
+            } catch (e: java.net.ConnectException) {
+                logger.error("cannot reconnect to vending. Shutting down.")
+                exitProcess(1)
+            }
+        }
     }
 }
