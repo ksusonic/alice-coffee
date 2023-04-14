@@ -35,7 +35,7 @@ func NewIntentDispatcher(globalCtx *ctx.GlobalCtx, logger *zap.SugaredLogger) *I
 
 func (d *IntentDispatcher) Handler(c context.Context, k dialogs.Kit) (response *dialogs.Response) {
 	req, resp := k.Init()
-	d.logger = d.logger.With(zap.String("req-id", req.ReqId()))
+	d.logger = d.logger.With(zap.String("req-id", req.ReqID()))
 	if req.IsNewSession() {
 		return resp.Text(nlg.RandomGreeting())
 	}
@@ -45,7 +45,7 @@ func (d *IntentDispatcher) Handler(c context.Context, k dialogs.Kit) (response *
 			Socket: d.globalCtx.Socket,
 		},
 		Logger: d.logger.Named("scene"),
-		ReqId:  req.ReqId(),
+		ReqId:  req.ReqID(),
 	}
 	defer func() {
 		if r := recover(); r != nil {
