@@ -3,6 +3,8 @@ package dialogs
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -84,6 +86,15 @@ func (req *Request) DangerousContext() bool {
 		return *req.Request.Markup.DangerousContext
 	}
 	return false
+}
+
+// ReqId собирает единый id запроса по формату: <message_id>__<session_id>
+func (req *Request) ReqId() string {
+	builder := strings.Builder{}
+	builder.WriteString(strconv.FormatInt(int64(req.Session.MessageID), 10))
+	builder.WriteString("__")
+	builder.WriteString(req.Session.SessionID)
+	return builder.String()
 }
 
 // Payload возвращает map[string]interface{} с данными, которые были переданы в Payload кнопки. Подходит для Payload, оформленного в виде json-объекта. Если Payload простая строка следует использовать метод PayloadString(). Если в запросе нет Payload возвращается ошибка.

@@ -1,45 +1,81 @@
 package scenario
 
 import (
+	"context"
+	"strings"
+
+	"github.com/ksusonic/alice-coffee/cloud/internal/ctx"
+	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/nlg"
+	"github.com/ksusonic/alice-coffee/cloud/internal/scenario/scene"
 	"github.com/ksusonic/alice-coffee/cloud/pkg/dialogs"
+	"go.uber.org/zap"
 )
 
-type HandlerFunc func(ctx *Context, req *dialogs.Request, intent string, slots dialogs.Slots, resp *dialogs.Response) *dialogs.Response
+type HandlerFunc func(ctx *ctx.SceneCtx, req *dialogs.Request, intent string, slots dialogs.Slots, resp *dialogs.Response) *dialogs.Response
 
 type IntentDispatcher struct {
 	IntentToFunc map[string]HandlerFunc
-	Context      *Context
+	globalCtx    *ctx.GlobalCtx
+	logger       *zap.SugaredLogger
 }
 
-func NewIntentDispatcher(
-	ctx *Context,
-) *IntentDispatcher {
+var IntentMapping = map[string]HandlerFunc{
+	IntentMakeCoffee:      scene.MakeCoffee,
+	IntentMakeCoffeeTyped: scene.MakeCoffeeTyped,
+	IntentWhatCanYouDo:    scene.WhatCanYouDo,
+}
+
+func NewIntentDispatcher(globalCtx *ctx.GlobalCtx, logger *zap.SugaredLogger) *IntentDispatcher {
 	return &IntentDispatcher{
-		IntentToFunc: map[string]HandlerFunc{
-			IntentMakeCoffee:      MakeCoffee,
-			IntentMakeCoffeeTyped: MakeCoffeeTyped,
+		IntentToFunc: IntentMapping,
+		globalCtx:    globalCtx,
+		logger:       logger,
+	}
+}
+
+func (d *IntentDispatcher) Handler(c context.Context, k dialogs.Kit) (response *dialogs.Response) {
+	req, resp := k.Init()
+	d.logger = d.logger.With(zap.String("req-id", req.ReqId()))
+	if req.IsNewSession() {
+		return resp.Text(nlg.RandomGreeting())
+	}
+	sceneContext := &ctx.SceneCtx{
+		Ctx: c,
+		GlobalCtx: &ctx.GlobalCtx{
+			Socket: d.globalCtx.Socket,
 		},
-		Context: ctx,
+		Logger: d.logger.Named("scene"),
+		ReqId:  req.ReqId(),
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			d.logger.Errorf("recovered scene error: %v", r)
+			response = resp.Text(nlg.ErrorPhrase())
+		}
+	}()
+
+	result := d.TryResponse(sceneContext, req, resp)
+	if result != nil {
+		return result
+	}
+	d.logger.Warn("Could not make relevant response")
+	return resp.Text(nlg.IrrelevantPhrase())
 }
 
-func (d *IntentDispatcher) TryResponse(req *dialogs.Request, resp *dialogs.Response) *dialogs.Response {
+func (d *IntentDispatcher) TryResponse(sceneContext *ctx.SceneCtx, req *dialogs.Request, resp *dialogs.Response) *dialogs.Response {
 	if len(req.Request.NLU.Intents) == 0 {
-		return nil
-	}
-	intent, slots := firstIntent(req.Request.NLU.Intents)
-
-	f, ok := d.IntentToFunc[intent]
-	if !ok {
+		d.logger.Debug("no intents found")
 		return nil
 	}
 
-	return f(d.Context, req, intent, slots, resp)
-}
-
-func firstIntent(i dialogs.Intents) (string, dialogs.Slots) {
-	for intent, slots := range i {
-		return intent, slots
+	for intent, slots := range req.Request.NLU.Intents {
+		f, ok := d.IntentToFunc[intent]
+		if ok {
+			d.logger.Debugf("matched intent %s", intent)
+			return f(sceneContext, req, intent, slots, resp)
+		}
 	}
-	return "", dialogs.Slots{}
+
+	d.logger.Warn("intents are unknown: ", strings.Join(req.Request.NLU.Intents.Names(), ", "))
+	return nil
 }

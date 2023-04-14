@@ -44,6 +44,14 @@ type Slots struct {
 // Intents is map name to slots
 type Intents map[string]Slots
 
+func (i Intents) Names() []string {
+	var result []string
+	for name := range i {
+		result = append(result, name)
+	}
+	return result
+}
+
 // NEName структура типа NENameType.
 type NEName struct {
 	Start, End     int
