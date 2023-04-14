@@ -1,5 +1,7 @@
 package models
 
+import "encoding/json"
+
 type CoffeeType struct {
 	Value         string
 	HumanReadable string
@@ -20,6 +22,10 @@ var (
 
 func (t CoffeeType) String() string {
 	return t.Value
+}
+
+func (t CoffeeType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.Value)
 }
 
 func ParseCoffee(coffeeType string) *CoffeeType {
