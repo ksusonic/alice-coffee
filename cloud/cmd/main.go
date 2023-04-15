@@ -13,6 +13,7 @@ import (
 	"github.com/ksusonic/alice-coffee/cloud/internal/server"
 	"github.com/ksusonic/alice-coffee/cloud/internal/ws"
 	"github.com/ksusonic/alice-coffee/cloud/pkg/dialogs"
+	"github.com/ksusonic/alice-coffee/cloud/test/websocket"
 	"go.uber.org/zap"
 )
 
@@ -23,7 +24,9 @@ func main() {
 	}
 	logger := getLogger(conf.Debug)
 
-	webSocket := ws.NewWebsocket(logger.Named("websocket"))
+	logger.Info("setup stage", zap.Any("config", conf))
+
+	webSocket := getWebsocket(conf.DemoMode, logger)
 	dialogsRouter, updates := dialogs.Router(dialogs.ServerConf{
 		Debug:    conf.Debug,
 		Timeout:  time.Duration(conf.Dialogs.Timeout),
@@ -41,7 +44,7 @@ func main() {
 		},
 		server.Route{
 			Pattern: "/ws",
-			Handler: webSocket.Router,
+			Handler: webSocket.Router(),
 		})
 	srv := s.Run() // start server
 
@@ -76,5 +79,14 @@ func getLogger(debug bool) *zap.Logger {
 		return retireLogger(zap.NewDevelopment())
 	} else {
 		return retireLogger(zap.NewProduction())
+	}
+}
+
+func getWebsocket(demo bool, logger *zap.Logger) customCtx.WebSocket {
+	namedLogger := logger.Named("websocket")
+	if demo {
+		return websocket.FakeWebsocket{Logger: namedLogger.Sugar()}
+	} else {
+		return ws.NewWebsocket(namedLogger)
 	}
 }

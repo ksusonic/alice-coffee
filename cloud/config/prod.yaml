@@ -2,4 +2,4 @@ debug: false
 server:
   address: 0.0.0.0:8080
 dialogs:
-  timeout: 2700
+  timeout: 2700 # 300ms for valid response

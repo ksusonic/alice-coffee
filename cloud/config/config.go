@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	Debug   bool          `yaml:"debug"`
-	Server  ServerConfig  `json:"server"`
-	Dialogs DialogsConfig `yaml:"dialogs"`
+	Debug    bool          `yaml:"debug"`
+	DemoMode bool          `yaml:"demo_mode"`
+	Server   ServerConfig  `yaml:"server"`
+	Dialogs  DialogsConfig `yaml:"dialogs"`
 }
 
 type ServerConfig struct {
@@ -32,6 +33,7 @@ func LoadConfig() (*Config, error) {
 	flag.StringVar(&config.Server.Address, "address", "127.0.0.1:8080", "server address like 127.0.0.1:8080")
 	flag.Int64Var(&config.Dialogs.Timeout, "timeout", 3000, "timeout in ms")
 	flag.BoolVar(&config.Debug, "debug", false, "debug mode")
+	flag.BoolVar(&config.DemoMode, "demo", false, "demo mode (no websocket)")
 	flag.Parse()
 
 	if configPath != "" {

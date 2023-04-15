@@ -1,0 +1,6 @@
+debug: true
+demo: true
+server:
+  address: 127.0.0.1:8080
+dialogs:
+  timeout: 3000

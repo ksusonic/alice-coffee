@@ -10,11 +10,15 @@ import (
 )
 
 type WebSocket struct {
-	Router   chi.Router
+	router   chi.Router
 	upgrader websocket.Upgrader
 	conn     *websocket.Conn
 
 	Logger *zap.Logger
+}
+
+func (c *WebSocket) Router() http.Handler {
+	return c.router
 }
 
 func (c *WebSocket) CheckActive() bool {
@@ -36,7 +40,7 @@ func (c *WebSocket) SendJSON(jsonData interface{}) error {
 
 func NewWebsocket(logger *zap.Logger) *WebSocket {
 	c := &WebSocket{
-		Router: chi.NewRouter(),
+		router: chi.NewRouter(),
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -54,7 +58,7 @@ func NewWebsocket(logger *zap.Logger) *WebSocket {
 		Logger: logger,
 	}
 
-	c.Router.HandleFunc("/", c.wsEndpoint)
+	c.router.HandleFunc("/", c.wsEndpoint)
 	return c
 }
 

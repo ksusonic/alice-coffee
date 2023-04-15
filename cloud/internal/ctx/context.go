@@ -2,6 +2,7 @@ package ctx
 
 import (
 	"context"
+	"net/http"
 
 	"go.uber.org/zap"
 )
@@ -9,6 +10,7 @@ import (
 type WebSocket interface {
 	SendJSON(jsonData interface{}) error
 	CheckActive() bool
+	Router() http.Handler
 }
 
 type GlobalCtx struct {
