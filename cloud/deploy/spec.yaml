@@ -24,7 +24,7 @@ services:
       - 24224:24224/udp
     restart: always
     environment:
-      YC_GROUP_ID: e23lc109los9chohgo0t
+      YC_GROUP_ID: e23epgd0mhu9ns6e2jdf
     volumes:
       - /etc/fluentbit/fluentbit.conf:/fluent-bit/etc/fluent-bit.conf
       - /etc/fluentbit/parsers.conf:/fluent-bit/etc/parsers.conf
