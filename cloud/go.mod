@@ -1,4 +1,4 @@
-module github.com/ksusonic/alice-coffee
+module github.com/ksusonic/alice-coffee/cloud
 
 go 1.19
 

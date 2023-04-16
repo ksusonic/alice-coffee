@@ -17,8 +17,8 @@ RUN go mod download
 
 COPY . .
 
-COPY cloud/config/prod.yaml /app/config.yaml
-RUN go build -ldflags="-s -w" -o /app/main cloud/cmd/main.go
+COPY config/prod.yaml /app/config.yaml
+RUN go build -ldflags="-s -w" -o /app/main cmd/main.go
 
 FROM alpine
 

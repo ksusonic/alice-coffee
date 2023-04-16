@@ -2,12 +2,12 @@ name: go vet test
 
 on:
   pull_request:
+    branches: [ "trunk" ]
   push:
-    branches:
-      - main
+    paths:
+      - cloud/**
 
 jobs:
-
   statictest:
     runs-on: ubuntu-latest
     container: golang:1.19
@@ -29,5 +29,7 @@ jobs:
           mv $GITHUB_WORKSPACE/.tools/statictest /usr/local/bin/statictest
 
       - name: Run statictest
+        working-directory: cloud
         run: |
           go vet -vettool=$(which statictest) ./...
+        
