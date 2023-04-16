@@ -74,11 +74,17 @@ func getLogger(debug bool) *zap.Logger {
 		}
 		return logger
 	}
+	cfgPatcher := func(zapConf zap.Config) *zap.Config {
+		zapConf.EncoderConfig.MessageKey = "message"
+		return &zapConf
+	}
 
 	if debug {
-		return retireLogger(zap.NewDevelopment())
+		cfg := cfgPatcher(zap.NewDevelopmentConfig())
+		return retireLogger(cfg.Build())
 	} else {
-		return retireLogger(zap.NewProduction())
+		cfg := cfgPatcher(zap.NewProductionConfig())
+		return retireLogger(cfg.Build())
 	}
 }
 

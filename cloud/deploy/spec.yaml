@@ -1,8 +1,8 @@
-version: '0.1'
+version: '0.1.3'
 services:
   server:
     container_name: alice-coffee-server
-    image: cr.yandex/crpgajf4bpcfpupauhmf/alice-coffee:latest
+    image: cr.yandex/crpgajf4bpcfpupauhmf/alice-coffee:v0.1.3
     restart: always
     depends_on:
       - fluentbit
@@ -11,6 +11,10 @@ services:
       options:
         fluentd-address: localhost:24224
         tag: server.logs
+    networks:
+      - app-net
+    ports:
+      - 8080:8080
 
   fluentbit:
     container_name: fluentbit
@@ -20,7 +24,11 @@ services:
       - 24224:24224/udp
     restart: always
     environment:
-      YC_GROUP_ID: alice-coffee
+      YC_GROUP_ID: e23lc109los9chohgo0t
     volumes:
       - /etc/fluentbit/fluentbit.conf:/fluent-bit/etc/fluent-bit.conf
       - /etc/fluentbit/parsers.conf:/fluent-bit/etc/parsers.conf
+
+networks:
+  app-net:
+    driver: bridge
