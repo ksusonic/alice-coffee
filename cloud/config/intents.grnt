@@ -1,0 +1,58 @@
+entity CoffeeType:
+    lemma: true
+    values:
+        latte:
+            латте
+        cappuccino:
+            капучино
+        americano:
+            американо
+        espresso:
+            эспрессо
+            экспрессо
+        cacao:
+            какао
+            горячий шоколад
+        simple:
+            обычный
+            простой
+            без всего
+            с водой
+
+form alice.make_coffee:
+    root:
+        [$Do* $Coffee+]
+
+        %negative
+        понял
+    $Do:
+        %lemma
+        хочу
+        сделай
+        приготовь
+        завари
+        вари
+        свари
+        готовь
+        заказать
+    $Coffee:
+        %lemma
+        кофе
+        кофейку
+
+form alice.make_coffee_typed:
+    slots:
+        coffee_type:
+            type: CoffeeType
+            source: $Type
+    root:
+        $Do* $Type
+    $Do:
+        %lemma
+        сделай
+        приготовь
+        завари
+        готовь
+        заказать
+    $Type:
+        $CoffeeType
