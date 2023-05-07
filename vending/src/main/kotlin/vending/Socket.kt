@@ -1,12 +1,13 @@
 package vending
 
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.Socket
 
-class VendingSocket internal constructor(private var host: String, private var port: Int) : Runnable {
+class VendingSocket internal constructor(private var host: String, private var port: Int) : Runnable, AbstractSocket {
     private val logger = KotlinLogging.logger {}
 
     private var socket: Socket = Socket(host, port)
@@ -16,7 +17,6 @@ class VendingSocket internal constructor(private var host: String, private var p
     private var dataToSend: ByteArray? = null
     private var answer: ByteArray? = null
     private val timeoutDefault = 700 //change to 200 for real machine
-    private val timeoutLong = 10000 //change to 1000 for real machine
     private var timeout = timeoutDefault
 
     private var running = true
@@ -24,7 +24,7 @@ class VendingSocket internal constructor(private var host: String, private var p
     private var reconnect = false
     private var waitForRead = 0
 
-    fun connect() {
+    override suspend fun connect() {
         try {
             socket = Socket(host, port)
             testIn = socket.getInputStream()
@@ -46,35 +46,27 @@ class VendingSocket internal constructor(private var host: String, private var p
         }
     }
 
-    private fun Reconnect() {
+    override suspend fun reconnect() {
         disconnect()
         connect()
     }
 
-    fun reconnect() {
-        reconnect = true
-        try {
-            Thread.sleep(500)
-        } catch (e: InterruptedException) {
-            e.printStackTrace()
-        }
-    }
-
-    fun stop() {
-        running = false
-    }
-
     override fun run() {
-        connect()
+        runBlocking {
+            connect()
+        }
         var startTime: Long
         while (running) {
             startTime = System.currentTimeMillis()
             if (reconnect) {
-                reconnect = false
-                Reconnect()
+                runBlocking {
+                    reconnect()
+                }
             }
             if (dataToSend != null) {
-                send(dataToSend!!)
+                runBlocking {
+                    send(dataToSend!!)
+                }
             }
             if (read) {
                 read = false
@@ -122,26 +114,13 @@ class VendingSocket internal constructor(private var host: String, private var p
         }
     }
 
-    private fun send(data: ByteArray) {
+    override suspend fun send(data: ByteArray): Int {
         write(data)
         dataToSend = null
+        return 0
     }
 
-    fun send(data: ByteArray?): Int {
-        dataToSend = data
-        read = true
-        waitForRead = -2
-        while (waitForRead == -2) {
-            try {
-                Thread.sleep(100)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-        }
-        return waitForRead
-    }
-
-    fun getAnswer(): ByteArray? {
+    override fun getAnswer(): ByteArray? {
         return answer
     }
 }

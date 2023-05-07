@@ -1,35 +1,35 @@
 package vending
 
+import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
-import java.net.ConnectException
 import kotlin.experimental.and
 import kotlin.experimental.inv
 import kotlin.experimental.or
 
-class VendingProtocol internal constructor(private val host: String, private val port: Int) {
+interface AbstractSocket {
+    suspend fun reconnect()
+    fun getAnswer(): ByteArray?
+    suspend fun send(data: ByteArray): Int
+    suspend fun connect()
+}
+
+class VendingProtocol internal constructor(private val socket: AbstractSocket) {
+
+    enum class CoffeeType(val value: Int, val readable: String, val code: String) {
+        BLACK(0, "черный кофе", "black"),
+        ESPRESSO(1, "эспрессо", "espresso"),
+        AMERICANO(2, "американо", "americano"),
+        LATTE(3, "латте", "latte"),
+        CAPPUCCINO(4, "капучино", "cappuccino"),
+        DOUBLE(8, "двойной", "double"),
+        TEA(126, "чай", "tea"),
+        UNKNOWN(128, "UNKNOWN", "unknown")
+    }
+
     private val logger = KotlinLogging.logger {}
 
-    private lateinit var socket: VendingSocket
-
     private var timer: java.util.Timer? = null
-    var status: Status = Status()
-
-    fun connect() {
-        try {
-            socket = VendingSocket(host, port) //socket = new socket("192.168.232.2", 1024);
-        } catch (e: ConnectException) {
-            logger.error("Could not connect to coffee vending. $e")
-            throw e
-        }
-
-        val socketTread = Thread(socket)
-        socketTread.start()
-        logic(initEvent, null)
-    }
-
-    fun disconnect() {
-        socket.stop()
-    }
+//    var status: Status = Status() TODO: status
 
     private fun parsePollData(pollData: ByteArray?): Int //TODO: Complete this.
     {
@@ -38,14 +38,6 @@ class VendingProtocol internal constructor(private val host: String, private val
         } else {
             0
         }
-    }
-
-    fun syncIfNeed(data: ByteArray): Int {
-        return if (data[2] == errorCode) {
-            if (cmdSync() == 0) {
-                yes
-            } else noAnswer
-        } else no
     }
 
     private val yes = 16
@@ -58,7 +50,7 @@ class VendingProtocol internal constructor(private val host: String, private val
     private var syncRequestStatus = fail
     private var error = 0
 
-    fun logic(source: Int, data: IntArray?): Int {
+    suspend fun logic(source: Int, data: IntArray?): Int {
         if (source != isSellSucceedEvent && logicBusy) return -2
         if (error > 1) {
             error = 0
@@ -83,7 +75,8 @@ class VendingProtocol internal constructor(private val host: String, private val
             makeACoffeeEvent -> {
                 logger.info("makeACoffeeEvent")
                 if (data != null) {
-                    if (cmdSell(data[0], data[1]) == 0) {
+                    val sellResult = cmdSell(data[0], data[1])
+                    if (sellResult == 0) {
                         logger.debug("cmdSellSended, answ = " + bytesToHex(socket.getAnswer()))
                         val answ: ByteArray? = socket.getAnswer()
                         if (answ != null) {
@@ -271,7 +264,9 @@ class VendingProtocol internal constructor(private val host: String, private val
 
     var poll: java.util.TimerTask = object : java.util.TimerTask() {
         override fun run() {
-            logic(timerEvent, null)
+            runBlocking {
+                logic(timerEvent, null)
+            }
         }
     }
 
@@ -333,7 +328,7 @@ class VendingProtocol internal constructor(private val host: String, private val
     }
 
     private var currentID = 0
-    private fun formRequest(data: ByteArray): Int {
+    private suspend fun formRequest(data: ByteArray): Int {
         var data = data
         data[0] = 0xD7.toByte()
         data[1] = (currentID and 0xFF).toByte()
@@ -346,21 +341,21 @@ class VendingProtocol internal constructor(private val host: String, private val
         return status
     }
 
-    private fun cmdSync(): Int {
+    suspend fun cmdSync(): Int {
         val data = ByteArray(5)
         data[2] = 0x00
         data[3] = 0
         return formRequest(data)
     }
 
-    private fun cmdPoll(): Int {
+    private suspend fun cmdPoll(): Int {
         val data = ByteArray(5)
         data[2] = 0x01
         data[3] = 0
         return formRequest(data)
     }
 
-    fun cmdTest(): Int {
+    suspend fun cmdTest(): Int {
         val data = ByteArray(15)
         data[2] = 100
         data[3] = 10
@@ -371,7 +366,7 @@ class VendingProtocol internal constructor(private val host: String, private val
         return formRequest(data)
     }
 
-    private fun cmdSell(coffeeType: Int, sugar: Int): Int {
+    private suspend fun cmdSell(coffeeType: Int, sugar: Int): Int {
         val data = ByteArray(3 + 5)
         data[2] = 0x04
         data[3] = 3
@@ -381,7 +376,7 @@ class VendingProtocol internal constructor(private val host: String, private val
         return formRequest(data)
     }
 
-    private fun cmdIsSellSucceed(): Int {
+    private suspend fun cmdIsSellSucceed(): Int {
         val data = ByteArray(5)
         data[2] = 0x05
         data[3] = 0
@@ -418,12 +413,12 @@ class VendingProtocol internal constructor(private val host: String, private val
           else
               toLog("Sell failed!" + bytesToHex(socket.getAnswer()));
       }*/
-    fun makeACoffee(type: Int, sugar: Int): Int {
+    suspend fun makeACoffee(type: Int, sugar: Int): Int {
         lastMakeCmdStatus = fail
         return logic(makeACoffeeEvent, intArrayOf(type, sugar))
     }
 
-    fun readPoll(): Int {
+    suspend fun readPoll(): Int {
         return logic(pollRequest, null)
     }
 

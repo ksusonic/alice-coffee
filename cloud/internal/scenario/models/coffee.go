@@ -13,10 +13,10 @@ var (
 	Americano     = CoffeeType{"americano", "американо"}
 	Cappuccino    = CoffeeType{"cappuccino", "капучино"}
 	Latte         = CoffeeType{"latte", "латте"}
-	Cacao         = CoffeeType{"cacao", "какао"}
+	Tea           = CoffeeType{"tea", "чай"}
 
 	AllCoffeeTypes = []CoffeeType{
-		Espresso, Americano, Cappuccino, Latte, Cacao,
+		Espresso, Americano, Cappuccino, Latte, Tea,
 	}
 )
 
