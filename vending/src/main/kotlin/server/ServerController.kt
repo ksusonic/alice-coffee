@@ -11,8 +11,7 @@ import vending.VendingProtocol
 
 
 class ServerController(
-    private val urlString: String,
-    private val vending: VendingProtocol
+    private val urlString: String, private val vending: VendingProtocol
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -34,9 +33,12 @@ class ServerController(
         val request = receiveDeserialized<Request>()
 
         logger.info("got request ${request.id}")
-        if (request.type.isNotEmpty()) {
-            vending.makeACoffee(2, request.sugar)
-        }
+        vending.cmdSync()
+        val type = VendingProtocol.CoffeeType.values().find {
+            request.type == it.code
+        } ?: throw RuntimeException("${request.type} coffee type is unknown")
+
+        vending.makeACoffee(type.value, request.sugar)
     }
 
 }

@@ -25,7 +25,7 @@ dependencies {
     implementation("io.ktor:ktor-network:$ktor_version")
     implementation("org.slf4j:slf4j-simple:2.0.5")
 
-    testImplementation(kotlin("test"))
+    implementation(kotlin("test"))
 }
 
 tasks.test {
