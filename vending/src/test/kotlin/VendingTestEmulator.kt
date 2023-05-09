@@ -1,11 +1,10 @@
-package com.example
+package vending.emulator
 
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import main.emulation.Emulator
 
 
 suspend fun read8Bytes(input: ByteReadChannel): ByteArray? {

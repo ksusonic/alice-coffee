@@ -13,19 +13,18 @@ repositories {
     mavenCentral()
 }
 
-val ktor_version = "2.2.4"
-
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
-    implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:$ktor_version")
-    implementation("io.ktor:ktor-client-websockets:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.4")
-    implementation("io.ktor:ktor-network:$ktor_version")
     implementation("org.slf4j:slf4j-simple:2.0.5")
 
-    implementation(kotlin("test"))
+    implementation("io.ktor:ktor-client-core-jvm:2.3.0")
+    implementation("io.ktor:ktor-client-cio-jvm:2.3.0")
+    implementation("io.ktor:ktor-client-websockets-jvm:2.3.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.0")
+    implementation("io.ktor:ktor-network-jvm:2.3.0")
+
+    testImplementation(kotlin("test"))
 }
 
 tasks.test {

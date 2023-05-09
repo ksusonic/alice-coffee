@@ -45,12 +45,9 @@ func NewWebsocket(logger *zap.Logger) *WebSocket {
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 			CheckOrigin: func(r *http.Request) bool {
-				username, password, _ := r.BasicAuth()
 				logger.Debug("check origin",
 					zap.String("host", r.Host),
 					zap.String("user-agent", r.UserAgent()),
-					zap.String("username", username),
-					zap.String("password", password),
 				)
 				return true
 			},
