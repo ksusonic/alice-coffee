@@ -22,6 +22,7 @@ type IntentDispatcher struct {
 var IntentMapping = map[string]HandlerFunc{
 	IntentMakeCoffee:      scene.MakeCoffee,
 	IntentMakeCoffeeTyped: scene.MakeCoffeeTyped,
+	IntentListDrings:      scene.ListDrinks,
 	IntentWhatCanYouDo:    scene.WhatCanYouDo,
 }
 
