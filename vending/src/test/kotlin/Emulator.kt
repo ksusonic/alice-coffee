@@ -1,25 +1,35 @@
-package main.emulation
+package vending.emulator
 
 import vending.VendingProtocol
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-
 class Emulator {
-    val syncCode: Byte = 0x00
-    val SellCommand: Byte = 0x04
-    val IsSellSucceedCommand: Byte = 0x05
+    private val syncCode: Byte = 0x00
+    private val sellCommand: Byte = 0x04
+    private val isSellSucceedCommand: Byte = 0x05
 
-    val VendingCode: Byte = 0x20
+    private val vendingCode: Byte = 0x20
 
-    var isSynced: Boolean = false
-    var lastSellSuccessed: Boolean = false
+    private var isSynced: Boolean = false
+    private var lastSellSuccess: Boolean = false
 
 
     data class Response(
         val message: String,
         val response: ByteArray = byteArrayOf(0, 0, 0, 0, 0, 0, 0, 0)
-    )
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Response
+
+            return response.contentEquals(other.response)
+        }
+
+        override fun hashCode(): Int = response.contentHashCode()
+    }
 
     fun handle(data: ByteArray): Response {
         assertEquals(8, data.size, "expected package of 8 bytes")
@@ -31,19 +41,21 @@ class Emulator {
             println("synced. Ok")
             return Response("synced. Ok")
         }
-        if (!isSynced) {
-            throw RuntimeException("ERROR: NOT SYNCED")
-        }
         when (data[2]) {
-            SellCommand -> {
+            sellCommand -> {
                 println("handling make coffee command")
-                if (data[4] != VendingCode) {
-                    println("vending code is not $VendingCode. Got: ${data[4]}")
+                if (!isSynced) {
+                    throw RuntimeException("ERROR: NOT SYNCED")
+                }
+                isSynced = false
+
+                if (data[4] != vendingCode) {
+                    println("vending code is not $vendingCode. Got: ${data[4]}")
                 }
                 val type = VendingProtocol.CoffeeType.values().find {
                     it.value == data[5].toInt()
                 } ?: VendingProtocol.CoffeeType.UNKNOWN
-                lastSellSuccessed = true
+                lastSellSuccess = true
                 val readable = "making a drink with type: ${type.readable} with ${data[6].toInt()} sugar"
                 println(readable)
                 return Response(
@@ -60,15 +72,15 @@ class Emulator {
                 )
             }
 
-            IsSellSucceedCommand -> {
-                println("handling is last sell successed command")
+            isSellSucceedCommand -> {
+                println("got check for is last sell success command == $lastSellSuccess")
                 return Response(
-                    lastSellSuccessed.toString(), byteArrayOf(
+                    lastSellSuccess.toString(), byteArrayOf(
                         data[0],
                         data[1],
                         0, // no errors
                         0,
-                        if (lastSellSuccessed) {
+                        if (lastSellSuccess) {
                             0x01
                         } else {
                             0x00
@@ -80,7 +92,6 @@ class Emulator {
                 )
             }
         }
-//        assertEquals(VendingCode, data[2], "code of vending (data[2]) is not correct")
 
         return Response("ok")
     }
