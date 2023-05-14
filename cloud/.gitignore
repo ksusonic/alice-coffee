@@ -50,3 +50,9 @@ Temporary Items
 .apdisk
 
 deploy/user-data.yaml
+/.idea/.gitignore
+/.idea/cloud.iml
+/.idea/modules.xml
+/.idea/remote-targets.xml
+/.idea/vcs.xml
+/.idea/yatool.xml

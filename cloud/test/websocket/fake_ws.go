@@ -26,5 +26,7 @@ func (f FakeWebsocket) SendJSON(jsonData interface{}) error {
 }
 
 func (f FakeWebsocket) CheckActive() bool {
-	return rand.Intn(100) < 10
+	success := rand.Intn(100) > 5
+	f.Logger.Infof("connection check %v", success)
+	return success
 }
