@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	WhichCoffee         = "Какой кофе вы хотите приготовить? В наличии латте, капучино, какао и другие."
+	WhichCoffee         = "Какой кофе вы хотите приготовить? В наличии латте, капучино, какао."
 	WhatCanYouDo        = "Я могу приготовить вам кофе: латте, капучино, горячий шоколад. Данный аппарат экспериментальный - при любых проблемах или пожеланиях пишите на рассылку alice-coffee."
 	ListDrinksHardcoded = "В наличии латте, капучино, чай."
 	feedbackAddress     = "При повторении ошибки напишите на рассылку alice-coffee@."
@@ -39,11 +39,20 @@ func randomOk() string {
 		"Поняла.",
 	)
 }
-func randomMaking() string {
+func randomBonAppetite() string {
 	return randomPhrase(
-		"Готовлю",
-		"Делаю",
-		"Варю",
+		"Приятного аппетита!",
+		"Приходите еще!",
+		"Осторожно, напиток горячий.",
+	)
+}
+
+func randomMaking() string {
+	return randomPhraseWithSuffix(
+		randomBonAppetite(),
+		"Готовлю!",
+		"Делаю!",
+		"Сейчас будет!",
 	)
 }
 
