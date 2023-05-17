@@ -24,6 +24,7 @@ func NewServer(cfg *config.ServerConfig, logger *zap.Logger, routers ...Route) *
 	mux := chi.NewRouter()
 
 	mux.Use(middleware.Recoverer)
+	mux.Use(middleware.Heartbeat("/ping"))
 
 	for _, r := range routers {
 		mux.Mount(r.Pattern, r.Handler)
